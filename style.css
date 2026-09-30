@@ -83,9 +83,7 @@ h1 { margin: 0 0 8px; font-size: 1.6rem; }
 .category-list .emoji { font-size: 1.8rem; }
 .category-list .count { font-size: 0.8rem; color: var(--muted); }
 
-.hint { min-height: 1.4em; color: var(--muted); letter-spacing: 0.1em; margin: 12px 0 4px; }
-
-form { display: flex; gap: 8px; margin-top: 8px; }
+form { display: flex; gap: 8px; margin-top: 16px; }
 input {
   flex: 1;
   padding: 12px;

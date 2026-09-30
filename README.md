@@ -7,9 +7,9 @@ A small browser game: you see a celebrity's photo and type their name.
 ## How to play
 
 - Pick a category (Movies & TV, Music, Sports, Public Figures, or Everyone).
-- Each game is 10 rounds, and you get 3 guesses per photo.
+- Each game is 10 rounds, and you get one guess per photo. The next photo comes up on its own after a couple of seconds.
 - A last name alone counts, and so do small typos.
-- A correct answer scores 3 points. Each hint costs 1 point, but you always get at least 1. From your third correct answer in a row, each one earns a +1 streak bonus.
+- A correct answer scores 3 points. From your third correct answer in a row, each one earns a +1 streak bonus.
 
 ## Running locally
 

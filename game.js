@@ -1,5 +1,5 @@
 const ROUNDS = 10;
-const MAX_WRONG_GUESSES = 3;
+const ADVANCE_DELAY_MS = 2000; // time to read the result before the next photo
 const MAX_LOAD_FAILURES = 3; // in a row, before assuming the connection is down
 
 const $ = (id) => document.getElementById(id);
@@ -13,8 +13,6 @@ let round = 0;
 let score = 0;
 let streak = 0;
 let current = null; // { name, answers, image }
-let wrongGuesses = 0;
-let hintLevel = 0;
 let roundOver = false;
 let history = [];
 let gameId = 0; // bumped on start/leave so a photo still loading for an old game is ignored
@@ -196,8 +194,6 @@ function startGame(cat = category) {
 async function nextRound() {
   if (round >= totalRounds) return endGame();
 
-  wrongGuesses = 0;
-  hintLevel = 0;
   roundOver = false;
   current = null;
 
@@ -205,11 +201,9 @@ async function nextRound() {
   $("photo").hidden = true;
   $("loading").hidden = false;
   $("loading").textContent = "Loading…";
-  $("hint").textContent = "";
   $("feedback").textContent = "";
   $("feedback").className = "feedback";
   $("guess-input").value = "";
-  $("next-btn").hidden = true;
   setInputsEnabled(false);
 
   const thisGame = gameId;
@@ -250,7 +244,7 @@ async function nextRound() {
 }
 
 function setInputsEnabled(enabled) {
-  for (const id of ["guess-input", "hint-btn", "skip-btn"]) $(id).disabled = !enabled;
+  for (const id of ["guess-input", "skip-btn"]) $(id).disabled = !enabled;
   document.querySelector("#guess-form button").disabled = !enabled;
 }
 
@@ -261,9 +255,12 @@ function finishRound(correct, points = 0) {
   history.push({ name: current.name, correct, points });
   updateStats();
   setInputsEnabled(false);
-  $("next-btn").hidden = false;
-  $("next-btn").textContent = round >= totalRounds ?"See results →" : "Next →";
-  $("next-btn").focus();
+
+  // Leave the result up long enough to read, then move on on its own.
+  const thisGame = gameId;
+  setTimeout(() => {
+    if (thisGame === gameId) nextRound();
+  }, ADVANCE_DELAY_MS);
 }
 
 function handleGuess(e) {
@@ -274,37 +271,18 @@ function handleGuess(e) {
 
   const fb = $("feedback");
   if (isCorrect(guess, current.answers)) {
-    const points = Math.max(1, 3 - hintLevel) + (streak >= 2 ? 1 : 0);
+    const points = 3 + (streak >= 2 ? 1 : 0);
     fb.textContent = `✅ Yes! It's ${current.name}. +${points}`;
     fb.className = "feedback good";
     finishRound(true, points);
   } else {
-    wrongGuesses++;
-    const left = MAX_WRONG_GUESSES - wrongGuesses;
     $("guess-form").classList.remove("shake");
     void $("guess-form").offsetWidth; // restart animation
     $("guess-form").classList.add("shake");
-    if (left > 0) {
-      fb.textContent = `❌ Nope. ${left} ${left === 1 ? "try" : "tries"} left.`;
-      fb.className = "feedback bad";
-      $("guess-input").select();
-    } else {
-      fb.textContent = `It was ${current.name}.`;
-      fb.className = "feedback bad";
-      finishRound(false);
-    }
+    fb.textContent = `❌ Nope, it was ${current.name}.`;
+    fb.className = "feedback bad";
+    finishRound(false);
   }
-}
-
-function handleHint() {
-  if (roundOver || !current || hintLevel >= 2) return;
-  hintLevel++;
-  const words = current.name.split(" ");
-  $("hint").textContent =
-    hintLevel === 1
-      ? words.map((w) => w[0] + "_".repeat(w.length - 1)).join("  ")
-      : words.map((w) => w.slice(0, Math.ceil(w.length / 2)) + "_".repeat(Math.floor(w.length / 2))).join("  ");
-  if (hintLevel >= 2) $("hint-btn").disabled = true;
 }
 
 function handleSkip() {
@@ -330,8 +308,6 @@ $("restart-btn").addEventListener("click", () => startGame());
 $("change-category-btn").addEventListener("click", showCategoryPicker);
 $("home-btn").addEventListener("click", goHome);
 $("guess-form").addEventListener("submit", handleGuess);
-$("hint-btn").addEventListener("click", handleHint);
 $("skip-btn").addEventListener("click", handleSkip);
-$("next-btn").addEventListener("click", nextRound);
 $("retry-btn").addEventListener("click", nextRound);
 renderCategories();
