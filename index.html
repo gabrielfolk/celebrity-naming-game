@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Who's That Celebrity?</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="card">
+    <header>
+      <button id="home-btn" class="home-btn" type="button" hidden>← Home</button>
+      <h1>Who's That Celebrity?</h1>
+      <p id="category-label" class="muted" hidden></p>
+      <div class="stats">
+        <span>Round <strong id="round">0</strong>/<span id="total">10</span></span>
+        <span>Score <strong id="score">0</strong></span>
+        <span>Streak <strong id="streak">0</strong></span>
+      </div>
+    </header>
+
+    <section id="start-screen">
+      <p>You'll see a celebrity. Type the name. Last names and small typos count.</p>
+      <p class="muted">Pick a category:</p>
+      <div id="category-list" class="category-list"></div>
+    </section>
+
+    <section id="game-screen" hidden>
+      <div class="photo-frame">
+        <div id="loading">Loading…</div>
+        <img id="photo" alt="Mystery celebrity" hidden />
+      </div>
+      <p id="hint" class="hint"></p>
+      <form id="guess-form" autocomplete="off">
+        <input id="guess-input" type="text" placeholder="Who is this?" autofocus />
+        <button type="submit" class="primary">Guess</button>
+      </form>
+      <div class="actions">
+        <button id="hint-btn" type="button">Hint (−1 pt)</button>
+        <button id="skip-btn" type="button">Skip</button>
+        <button id="next-btn" type="button" class="primary" hidden>Next →</button>
+        <button id="retry-btn" type="button" class="primary" hidden>Retry</button>
+      </div>
+      <p id="feedback" class="feedback" aria-live="polite"></p>
+    </section>
+
+    <section id="end-screen" hidden>
+      <h2>Game over!</h2>
+      <p id="final-score"></p>
+      <ul id="summary"></ul>
+      <div class="actions">
+        <button id="change-category-btn">Change category</button>
+        <button id="restart-btn" class="primary">Play again</button>
+      </div>
+    </section>
+
+    <footer>Photos from Wikipedia / Wikimedia Commons.</footer>
+  </main>
+
+  <script src="celebrities.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
