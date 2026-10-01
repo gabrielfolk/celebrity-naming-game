@@ -4,8 +4,16 @@ const MAX_LOAD_FAILURES = 3; // in a row, before assuming the connection is down
 
 const $ = (id) => document.getElementById(id);
 
-const EVERYONE = { label: "Everyone", emoji: "🌟", people: Object.values(CATEGORIES).flatMap((c) => c.people) };
+const EVERYONE = {
+  label: "Everyone",
+  emoji: "🌟",
+  people: Object.values(CATEGORIES).flatMap((c) => c.people),
+  hard: Object.values(CATEGORIES).flatMap((c) => c.hard),
+};
+const ALL_PEOPLE = [...EVERYONE.people, ...EVERYONE.hard];
+const MODES = { easy: "Human", hard: "Perfect Human Specimen" };
 
+let mode = "easy";
 let category = EVERYONE;
 let totalRounds = ROUNDS;
 let deck = [];
@@ -56,34 +64,33 @@ function lastName(name) {
   return parts.length > 1 && parts[parts.length - 1].length >= 3 ? parts[parts.length - 1] : null;
 }
 
-// Last names shared by two or more celebrities (e.g. Jackson) aren't accepted alone.
-const SHARED_LAST_NAMES = (() => {
+// Last names shared by two or more celebrities in the same mode (e.g. Jackson)
+// aren't accepted alone. Each mode only ever shows its own list, so Will Smith
+// keeps "Smith" in Easy even though Maggie Smith is in Hard.
+function sharedLastNames(people) {
   const counts = {};
-  for (const cat of Object.values(CATEGORIES)) {
-    for (const p of cat.people) {
-      const ln = lastName(displayName(p.wiki));
-      if (ln) counts[ln] = (counts[ln] || 0) + 1;
-    }
+  for (const p of people) {
+    const ln = lastName(displayName(p.wiki));
+    if (ln) counts[ln] = (counts[ln] || 0) + 1;
   }
   return new Set(Object.keys(counts).filter((ln) => counts[ln] > 1));
-})();
+}
+const SHARED_LAST_NAMES = { easy: sharedLastNames(EVERYONE.people), hard: sharedLastNames(EVERYONE.hard) };
 
-function buildAnswers(name, aliases = []) {
+function buildAnswers(name, aliases = [], shared = SHARED_LAST_NAMES[mode]) {
   const answers = new Set([name, ...aliases].map(normalize));
   const ln = lastName(name);
-  if (ln && !SHARED_LAST_NAMES.has(ln)) answers.add(ln);
+  if (ln && !shared.has(ln)) answers.add(ln);
   return [...answers];
 }
 
 // Every name any celebrity goes by, including shared last names. A guess that is
 // exactly someone else's name isn't let through as a typo (Carey vs Carrey).
 const ALL_NAMES = new Set(
-  Object.values(CATEGORIES).flatMap((cat) =>
-    cat.people.flatMap((p) => {
-      const name = displayName(p.wiki);
-      return [...buildAnswers(name, p.aliases), lastName(name)].filter(Boolean);
-    })
-  )
+  ALL_PEOPLE.flatMap((p) => {
+    const name = displayName(p.wiki);
+    return [...buildAnswers(name, p.aliases), lastName(name)].filter(Boolean);
+  })
 );
 
 function isCorrect(guess, answers) {
@@ -149,13 +156,26 @@ function updateStats() {
   $("streak").textContent = streak;
 }
 
+// The celebrities a category plays with in the current mode.
+function pool(cat) {
+  return mode === "hard" ? cat.hard : cat.people;
+}
+
+function setMode(m) {
+  mode = m;
+  for (const btn of document.querySelectorAll("#mode-picker button")) {
+    btn.setAttribute("aria-pressed", btn.dataset.mode === mode);
+  }
+  renderCategories();
+}
+
 function renderCategories() {
   const list = $("category-list");
   list.innerHTML = "";
   for (const cat of [EVERYONE, ...Object.values(CATEGORIES)]) {
     const btn = document.createElement("button");
     if (cat === EVERYONE) btn.className = "everyone primary";
-    btn.innerHTML = `<span class="emoji">${cat.emoji}</span><span>${cat.label}</span><span class="count">${cat.people.length} celebrities</span>`;
+    btn.innerHTML = `<span class="emoji">${cat.emoji}</span><span>${cat.label}</span><span class="count">${pool(cat).length} celebrities</span>`;
     btn.addEventListener("click", () => startGame(cat));
     list.appendChild(btn);
   }
@@ -179,10 +199,10 @@ function showCategoryPicker() {
 function startGame(cat = category) {
   gameId++;
   category = cat;
-  totalRounds = Math.min(ROUNDS, cat.people.length);
-  $("category-label").textContent = `${cat.emoji} ${cat.label}`;
+  totalRounds = Math.min(ROUNDS, pool(cat).length);
+  $("category-label").textContent = `${cat.emoji} ${cat.label} · ${MODES[mode]}`;
   $("category-label").hidden = false;
-  deck = shuffle(cat.people);
+  deck = shuffle(pool(cat));
   round = 0;
   score = 0;
   streak = 0;
@@ -310,4 +330,7 @@ $("home-btn").addEventListener("click", goHome);
 $("guess-form").addEventListener("submit", handleGuess);
 $("skip-btn").addEventListener("click", handleSkip);
 $("retry-btn").addEventListener("click", nextRound);
-renderCategories();
+for (const btn of document.querySelectorAll("#mode-picker button")) {
+  btn.addEventListener("click", () => setMode(btn.dataset.mode));
+}
+setMode(mode);

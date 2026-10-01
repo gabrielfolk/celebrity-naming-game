@@ -6,6 +6,7 @@ A small browser game: you see a celebrity's photo and type their name.
 
 ## How to play
 
+- Pick a difficulty. Human has the household names; Perfect Human Specimen is a separate set of people you'd probably recognize but might not be able to name: character actors, older stars, directors, international athletes, world leaders, and more.
 - Pick a category (Movies & TV, Music, Sports, Public Figures, or Everyone).
 - Each game is 10 rounds, and you get one guess per photo. The next photo comes up on its own after a couple of seconds.
 - A last name alone counts, and so do small typos.
@@ -17,10 +18,10 @@ There's no build step or dependencies. Just open `index.html` in a browser.
 
 ## How it works
 
-- `celebrities.js`: the list of celebrities by category. Each entry is a Wikipedia page title, plus any other names that count as correct.
+- `celebrities.js`: the list of celebrities by category. Each category has a `people` list (Human) and a `hard` list (Perfect Human Specimen). Each entry is a Wikipedia page title, plus any other names that count as correct.
 - `game.js`: the game logic. It fetches photos from the Wikipedia REST API and checks answers.
 - `index.html` / `style.css`: the page and its styling.
 
-To add a celebrity, add their Wikipedia page title to a category in `celebrities.js`.
+To add a celebrity, add their Wikipedia page title to a category's `people` or `hard` list in `celebrities.js`.
 
 Photos come from Wikipedia / Wikimedia Commons.

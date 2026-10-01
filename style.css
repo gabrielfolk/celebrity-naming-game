@@ -67,6 +67,17 @@ h1 { margin: 0 0 8px; font-size: 1.6rem; }
 
 .muted { color: var(--muted); margin: 4px 0 12px; }
 
+.mode-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 4px 0 8px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mode-picker button { border: none; border-radius: 0; padding: 8px 12px; }
+.mode-picker button[aria-pressed="true"] { background: var(--accent); }
+
 .category-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
