@@ -1,5 +1,7 @@
 const ROUNDS = 10;
 const ADVANCE_DELAY_MS = 2000; // time to read the result before the next photo
+const POINTS = 3;
+const DEEP_BONUS = 2; // for answering with a lesser-known name, e.g. Jimmy Donaldson for MrBeast
 const MAX_LOAD_FAILURES = 3; // in a row, before assuming the connection is down
 
 const $ = (id) => document.getElementById(id);
@@ -89,9 +91,17 @@ function buildAnswers(name, aliases = [], shared = SHARED_LAST_NAMES[mode]) {
 const ALL_NAMES = new Set(
   ALL_PEOPLE.flatMap((p) => {
     const name = displayName(p.wiki);
-    return [...buildAnswers(name, p.aliases), lastName(name)].filter(Boolean);
+    return [...buildAnswers(name, p.aliases), lastName(name), ...(p.deep || []).map(normalize)].filter(Boolean);
   })
 );
+
+// "deep" for a lesser-known name, "normal" for any other accepted answer, or null.
+function matchGuess(guess, celeb) {
+  if (celeb.deepAnswers.includes(normalize(guess))) return "deep";
+  if (isCorrect(guess, celeb.answers)) return "normal";
+  if (isCorrect(guess, celeb.deepAnswers)) return "deep";
+  return null;
+}
 
 function isCorrect(guess, answers) {
   const g = normalize(guess);
@@ -118,6 +128,8 @@ async function fetchCelebrity(entry) {
   return {
     name,
     answers: buildAnswers(name, entry.aliases),
+    deepNames: entry.deep || [],
+    deepAnswers: (entry.deep || []).map(normalize),
     image: data.thumbnail.source,
   };
 }
@@ -268,11 +280,11 @@ function setInputsEnabled(enabled) {
   document.querySelector("#guess-form button").disabled = !enabled;
 }
 
-function finishRound(correct, points = 0) {
+function finishRound(correct, points = 0, deep = false) {
   roundOver = true;
   score += points;
   streak = correct ? streak + 1 : 0;
-  history.push({ name: current.name, correct, points });
+  history.push({ name: current.name, correct, points, deep });
   updateStats();
   setInputsEnabled(false);
 
@@ -283,6 +295,11 @@ function finishRound(correct, points = 0) {
   }, ADVANCE_DELAY_MS);
 }
 
+// Shows the lesser-known name too, so players learn it's worth more next time.
+function fullName(celeb) {
+  return celeb.deepNames.length ? `${celeb.name} (aka ${celeb.deepNames[0]})` : celeb.name;
+}
+
 function handleGuess(e) {
   e.preventDefault();
   if (roundOver || !current) return;
@@ -290,16 +307,20 @@ function handleGuess(e) {
   if (!guess.trim()) return;
 
   const fb = $("feedback");
-  if (isCorrect(guess, current.answers)) {
-    const points = 3 + (streak >= 2 ? 1 : 0);
-    fb.textContent = `✅ Yes! It's ${current.name}. +${points}`;
+  const match = matchGuess(guess, current);
+  if (match) {
+    const deep = match === "deep";
+    const points = POINTS + (deep ? DEEP_BONUS : 0) + (streak >= 2 ? 1 : 0);
+    fb.textContent = deep
+      ? `🧠 Deep cut! It's ${fullName(current)}. +${points}`
+      : `✅ Yes! It's ${fullName(current)}. +${points}`;
     fb.className = "feedback good";
-    finishRound(true, points);
+    finishRound(true, points, deep);
   } else {
     $("guess-form").classList.remove("shake");
     void $("guess-form").offsetWidth; // restart animation
     $("guess-form").classList.add("shake");
-    fb.textContent = `❌ Nope, it was ${current.name}.`;
+    fb.textContent = `❌ Nope, it was ${fullName(current)}.`;
     fb.className = "feedback bad";
     finishRound(false);
   }
@@ -307,7 +328,7 @@ function handleGuess(e) {
 
 function handleSkip() {
   if (roundOver || !current) return;
-  $("feedback").textContent = `Skipped. It was ${current.name}.`;
+  $("feedback").textContent = `Skipped. It was ${fullName(current)}.`;
   $("feedback").className = "feedback bad";
   finishRound(false);
 }
@@ -319,7 +340,7 @@ function endGame() {
   $("summary").innerHTML = "";
   for (const h of history) {
     const li = document.createElement("li");
-    li.textContent = `${h.correct ? "✅" : "❌"} ${h.name}${h.points ? ` (+${h.points})` : ""}`;
+    li.textContent = `${h.deep ? "🧠" : h.correct ? "✅" : "❌"} ${h.name}${h.points ? ` (+${h.points})` : ""}`;
     $("summary").appendChild(li);
   }
 }
