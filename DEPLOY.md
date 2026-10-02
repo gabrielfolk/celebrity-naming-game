@@ -31,13 +31,16 @@ cPanel → **Software → MultiPHP Manager**. Set `whosthatceleb.com` to PHP 8.1
 
 ### 5. Create the database
 
-1. cPanel → **Databases → MySQL Databases**.
+1. cPanel → **Databases → MySQL Database Wizard**.
 2. Create a database (for example `celebs`). GoDaddy adds your cPanel username as a prefix,
    so the full name looks like `abc123_celebs`.
-3. Create a user with a strong password.
-4. Add the user to the database with **All Privileges**.
+3. Create a user just for this game. Use the **Password Generator** and save the password in
+   a password manager.
+4. On the privileges screen, tick only **SELECT, INSERT, UPDATE, DELETE**. That's all the
+   game does, so a bug in it could never drop or change tables.
 5. cPanel → **phpMyAdmin**, select the database, open the **SQL** tab, paste the contents of
-   [`server/schema.sql`](server/schema.sql) and click **Go**.
+   [`server/schema.sql`](server/schema.sql) and click **Go**. (phpMyAdmin logs in as your
+   cPanel account, so it can create the tables even though the game's user can't.)
 
 ### 6. Add the config file
 
