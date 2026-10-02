@@ -1,0 +1,23 @@
+# Local copy of the full site: PHP + Apache + MySQL, like the GoDaddy hosting.
+#   docker compose up    then open http://localhost:8080
+services:
+  web:
+    image: php:8.2-apache
+    ports: ["8080:80"]
+    depends_on: [db]
+    environment:
+      CELEB_CONFIG: /config/celebrity-game-config.php
+    volumes:
+      - ./public:/var/www/html:ro
+      - ./server/config.docker.php:/config/celebrity-game-config.php:ro
+    command: bash -c "docker-php-ext-install pdo_mysql > /dev/null && apache2-foreground"
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: celebs
+      MYSQL_USER: celebs
+      MYSQL_PASSWORD: celebs
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./server/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro

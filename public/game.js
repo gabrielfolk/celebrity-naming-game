@@ -3,20 +3,25 @@ const ADVANCE_DELAY_MS = 2000; // time to read the result before the next photo
 const POINTS = 3;
 const DEEP_BONUS = 2; // for answering with a lesser-known name, e.g. Jimmy Donaldson for MrBeast
 const MAX_LOAD_FAILURES = 3; // in a row, before assuming the connection is down
+const API = "api/leaderboard.php";
+const ONLINE = location.protocol !== "file:"; // the leaderboard only works on the real site
 
 const $ = (id) => document.getElementById(id);
 
 const EVERYONE = {
+  key: "everyone",
   label: "Everyone",
   emoji: "🌟",
   people: Object.values(CATEGORIES).flatMap((c) => c.people),
   hard: Object.values(CATEGORIES).flatMap((c) => c.hard),
 };
+for (const [key, cat] of Object.entries(CATEGORIES)) cat.key = key;
 const ALL_PEOPLE = [...EVERYONE.people, ...EVERYONE.hard];
 const MODES = { easy: "Human", hard: "Perfect Human Specimen" };
 
 let mode = "easy";
 let category = EVERYONE;
+let dailyDate = null; // the UTC date while playing the daily challenge, otherwise null
 let totalRounds = ROUNDS;
 let deck = [];
 let round = 0;
@@ -145,20 +150,56 @@ function loadImage(src) {
 
 // ---------- Game flow ----------
 
-function shuffle(arr) {
+function shuffle(arr, random = Math.random) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
 
+// Same seed, same sequence (mulberry32), so everyone gets the same daily deck.
+function seededRandom(seed) {
+  let a = 2166136261;
+  for (let i = 0; i < seed.length; i++) a = Math.imul(a ^ seed.charCodeAt(i), 16777619);
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// The daily challenge changes at midnight UTC, the same moment for everyone.
+function todayUTC() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Browser storage can be unavailable (private windows, blocked cookies); the game
+// still works without it, it just won't remember anything.
+function load(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key));
+  } catch {
+    return null;
+  }
+}
+
+function save(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
+const dailyKey = (date, m) => `celeb:daily:${date}:${m}`;
+
 function show(screen) {
-  for (const id of ["start-screen", "game-screen", "end-screen"]) {
+  for (const id of ["start-screen", "game-screen", "end-screen", "leaderboard-screen"]) {
     $(id).hidden = id !== screen;
   }
   $("home-btn").hidden = screen === "start-screen";
+  document.querySelector(".stats").hidden = screen === "leaderboard-screen";
 }
 
 function updateStats() {
@@ -173,12 +214,37 @@ function pool(cat) {
   return mode === "hard" ? cat.hard : cat.people;
 }
 
+function setPressed(group, attr, value) {
+  for (const btn of document.querySelectorAll(`#${group} button`)) {
+    btn.setAttribute("aria-pressed", btn.dataset[attr] === value);
+  }
+}
+
 function setMode(m) {
   mode = m;
-  for (const btn of document.querySelectorAll("#mode-picker button")) {
-    btn.setAttribute("aria-pressed", btn.dataset.mode === mode);
-  }
+  setPressed("mode-picker", "mode", mode);
+  renderDaily();
   renderCategories();
+}
+
+// One try per day per mode. It counts as used once started, so leaving and
+// restarting can't be used to see the answers first.
+function renderDaily() {
+  const played = load(dailyKey(todayUTC(), mode));
+  $("daily-status").textContent = !played
+    ? "Same 10 celebrities for everyone today"
+    : played.score == null
+      ? "Started today, not finished"
+      : `Done today: ${played.score} points`;
+}
+
+function handleDaily() {
+  if (load(dailyKey(todayUTC(), mode))) {
+    if (ONLINE) openLeaderboard({ kind: "daily", mode });
+    else alert("You've already played today's challenge. Come back tomorrow!");
+    return;
+  }
+  startGame(EVERYONE, todayUTC());
 }
 
 function renderCategories() {
@@ -186,7 +252,7 @@ function renderCategories() {
   list.innerHTML = "";
   for (const cat of [EVERYONE, ...Object.values(CATEGORIES)]) {
     const btn = document.createElement("button");
-    if (cat === EVERYONE) btn.className = "everyone primary";
+    if (cat === EVERYONE) btn.className = "everyone";
     btn.innerHTML = `<span class="emoji">${cat.emoji}</span><span>${cat.label}</span><span class="count">${pool(cat).length} celebrities</span>`;
     btn.addEventListener("click", () => startGame(cat));
     list.appendChild(btn);
@@ -194,8 +260,9 @@ function renderCategories() {
 }
 
 function goHome() {
-  const midGame = !$("game-screen").hidden && history.length > 0;
-  if (midGame && !confirm("Leave this game? Your score will be lost.")) return;
+  const inGame = !$("game-screen").hidden;
+  if (inGame && dailyDate && !confirm("Leave the daily challenge? You won't be able to play it again today.")) return;
+  if (inGame && !dailyDate && history.length > 0 && !confirm("Leave this game? Your score will be lost.")) return;
   showCategoryPicker();
 }
 
@@ -205,16 +272,21 @@ function showCategoryPicker() {
   round = score = streak = 0;
   totalRounds = ROUNDS;
   updateStats();
+  renderDaily();
   show("start-screen");
 }
 
-function startGame(cat = category) {
+function startGame(cat = category, date = null) {
   gameId++;
   category = cat;
+  dailyDate = date;
   totalRounds = Math.min(ROUNDS, pool(cat).length);
-  $("category-label").textContent = `${cat.emoji} ${cat.label} · ${MODES[mode]}`;
+  $("category-label").textContent = date
+    ? `📅 Daily challenge · ${MODES[mode]}`
+    : `${cat.emoji} ${cat.label} · ${MODES[mode]}`;
   $("category-label").hidden = false;
-  deck = shuffle(pool(cat));
+  if (date) save(dailyKey(date, mode), { score: null });
+  deck = date ? shuffle(pool(cat), seededRandom(`${date}:${mode}`)) : shuffle(pool(cat));
   round = 0;
   score = 0;
   streak = 0;
@@ -343,6 +415,178 @@ function endGame() {
     li.textContent = `${h.deep ? "🧠" : h.correct ? "✅" : "❌"} ${h.name}${h.points ? ` (+${h.points})` : ""}`;
     $("summary").appendChild(li);
   }
+  if (dailyDate) save(dailyKey(dailyDate, mode), { score });
+  $("restart-btn").hidden = !!dailyDate;
+
+  // Only full games go on the leaderboard.
+  const canSubmit = ONLINE && history.length === ROUNDS;
+  $("submit-form").hidden = !canSubmit;
+  $("submit-form").querySelector("button").disabled = false;
+  $("nickname-input").value = load("celeb:nickname") || "";
+  $("submit-status").textContent = ONLINE ? "" : "Scores can be saved on the website version of the game.";
+  $("end-board").hidden = true;
+}
+
+// ---------- Leaderboard ----------
+
+// A random ID that marks this browser's scores, kept so you can find yourself on the board.
+function playerId() {
+  let id = load("celeb:player");
+  if (!/^[0-9a-f]{32}$/.test(id || "")) {
+    id = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    save("celeb:player", id);
+  }
+  return id;
+}
+
+async function api(method, params) {
+  const res =
+    method === "GET"
+      ? await fetch(`${API}?${new URLSearchParams(params)}`)
+      : await fetch(API, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(params) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw Object.assign(new Error(data.error || "The leaderboard is unavailable right now."), { status: res.status });
+  }
+  return data;
+}
+
+function boardLabel(b) {
+  const cat = b.category === "everyone" ? EVERYONE : CATEGORIES[b.category];
+  return b.kind === "daily" ? `📅 Daily challenge · ${MODES[b.mode]}` : `${cat.emoji} ${cat.label} · ${MODES[b.mode]}`;
+}
+
+function boardParams(b) {
+  return b.kind === "daily"
+    ? { kind: "daily", mode: b.mode, date: b.date || todayUTC() }
+    : { kind: "random", mode: b.mode, category: b.category };
+}
+
+// Nicknames come from other players, so they only ever go in as text.
+function renderBoard(list, data) {
+  list.innerHTML = "";
+  const rows = [...data.top];
+  if (data.me && !data.top.some((r) => r.you)) rows.push(null, data.me);
+  if (!rows.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "No scores yet. Be the first!";
+    list.appendChild(li);
+  }
+  for (const r of rows) {
+    const li = document.createElement("li");
+    if (!r) {
+      li.className = "gap";
+      li.textContent = "⋯";
+    } else {
+      if (r.you) li.className = "you";
+      for (const [cls, text] of [["rank", `#${r.rank}`], ["name", r.nickname], ["points", r.score]]) {
+        const span = document.createElement("span");
+        span.className = cls;
+        span.textContent = text;
+        li.appendChild(span);
+      }
+    }
+    list.appendChild(li);
+  }
+  list.hidden = false;
+}
+
+async function handleSubmitScore(e) {
+  e.preventDefault();
+  const nickname = $("nickname-input").value.trim();
+  if (!nickname) return $("nickname-input").focus();
+  save("celeb:nickname", nickname);
+
+  const b = dailyDate ? { kind: "daily", mode, date: dailyDate } : { kind: "random", mode, category: category.key };
+  const button = $("submit-form").querySelector("button");
+  button.disabled = true;
+  $("submit-status").textContent = "Saving…";
+  try {
+    const data = await api("POST", {
+      ...boardParams(b),
+      player: playerId(),
+      nickname,
+      rounds: history.map((h) => ({ correct: h.correct, deep: h.deep })),
+    });
+    $("submit-form").hidden = true;
+    const rank = data.me.rank;
+    $("submit-status").textContent =
+      b.kind === "daily"
+        ? `You're #${rank} on today's challenge!`
+        : data.newBest
+          ? `New best! You're #${rank} in ${boardLabel(b)}.`
+          : `Your best here is still ${data.me.score} (#${rank}).`;
+    renderBoard($("end-board"), data);
+  } catch (err) {
+    $("submit-status").textContent = err.message;
+    if (err.status === 409) {
+      $("submit-form").hidden = true;
+      api("GET", { ...boardParams(b), player: playerId() })
+        .then((data) => renderBoard($("end-board"), data))
+        .catch(() => {});
+    } else {
+      button.disabled = false;
+    }
+  }
+}
+
+let lbView = { kind: "daily", mode: "easy", category: "everyone" };
+
+function openLeaderboard(view = {}) {
+  gameId++;
+  $("category-label").hidden = true;
+  lbView = { ...lbView, mode, ...view };
+  show("leaderboard-screen");
+  loadLeaderboard();
+}
+
+async function loadLeaderboard() {
+  setPressed("lb-kind", "kind", lbView.kind);
+  setPressed("lb-mode", "mode", lbView.mode);
+  $("lb-category").hidden = lbView.kind !== "random";
+  $("lb-category").value = lbView.category;
+  $("lb-note").textContent =
+    lbView.kind === "daily" ? "Today's challenge. A new one starts at midnight UTC." : "Each player's best game.";
+  $("lb-list").hidden = true;
+  $("lb-status").textContent = "Loading…";
+
+  const view = { ...lbView };
+  try {
+    const data = await api("GET", { ...boardParams(view), player: playerId() });
+    if (JSON.stringify(view) !== JSON.stringify(lbView)) return; // the player switched boards meanwhile
+    $("lb-status").textContent = "";
+    renderBoard($("lb-list"), data);
+  } catch (err) {
+    if (JSON.stringify(view) === JSON.stringify(lbView)) $("lb-status").textContent = err.message;
+  }
+}
+
+function renderLeaderboardControls() {
+  const select = $("lb-category");
+  for (const cat of [EVERYONE, ...Object.values(CATEGORIES)]) {
+    const opt = document.createElement("option");
+    opt.value = cat.key;
+    opt.textContent = `${cat.emoji} ${cat.label}`;
+    select.appendChild(opt);
+  }
+  select.addEventListener("change", () => {
+    lbView.category = select.value;
+    loadLeaderboard();
+  });
+  for (const btn of document.querySelectorAll("#lb-kind button")) {
+    btn.addEventListener("click", () => {
+      lbView.kind = btn.dataset.kind;
+      loadLeaderboard();
+    });
+  }
+  for (const btn of document.querySelectorAll("#lb-mode button")) {
+    btn.addEventListener("click", () => {
+      lbView.mode = btn.dataset.mode;
+      loadLeaderboard();
+    });
+  }
+  $("leaderboard-btn").hidden = !ONLINE;
 }
 
 $("restart-btn").addEventListener("click", () => startGame());
@@ -351,6 +595,10 @@ $("home-btn").addEventListener("click", goHome);
 $("guess-form").addEventListener("submit", handleGuess);
 $("skip-btn").addEventListener("click", handleSkip);
 $("retry-btn").addEventListener("click", nextRound);
+$("daily-btn").addEventListener("click", handleDaily);
+$("leaderboard-btn").addEventListener("click", () => openLeaderboard());
+$("submit-form").addEventListener("submit", handleSubmitScore);
+renderLeaderboardControls();
 for (const btn of document.querySelectorAll("#mode-picker button")) {
   btn.addEventListener("click", () => setMode(btn.dataset.mode));
 }

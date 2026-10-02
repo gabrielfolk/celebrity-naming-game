@@ -10,6 +10,9 @@
 
 * { box-sizing: border-box; }
 
+/* display rules below (flex, grid) would otherwise override the hidden attribute */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -42,7 +45,6 @@ h1 { margin: 0 0 8px; font-size: 1.6rem; }
   color: var(--muted);
 }
 .home-btn:hover { color: var(--text); }
-.home-btn[hidden] { display: none; }
 
 .stats {
   display: flex;
@@ -75,7 +77,7 @@ h1 { margin: 0 0 8px; font-size: 1.6rem; }
   line-height: 1.6;
 }
 
-.mode-picker {
+.segmented {
   display: grid;
   grid-template-columns: 1fr 1fr;
   margin: 4px 0 8px;
@@ -83,8 +85,44 @@ h1 { margin: 0 0 8px; font-size: 1.6rem; }
   border-radius: 8px;
   overflow: hidden;
 }
-.mode-picker button { border: none; border-radius: 0; padding: 8px 12px; }
-.mode-picker button[aria-pressed="true"] { background: var(--accent); }
+.segmented button { border: none; border-radius: 0; padding: 8px 12px; }
+.segmented button[aria-pressed="true"] { background: var(--accent); }
+
+.daily {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.daily .emoji { font-size: 1.8rem; }
+.daily .count { font-size: 0.8rem; opacity: 0.85; }
+
+.link-btn { margin-top: 14px; border: none; color: var(--muted); }
+.link-btn:hover { color: var(--text); }
+
+.submit-form { margin-top: 8px; }
+
+select {
+  width: 100%;
+  margin: 4px 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0b1222;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.board { list-style: none; padding: 0; margin: 8px 0; text-align: left; }
+.board li { display: flex; gap: 10px; padding: 6px 8px; border-bottom: 1px solid #334155; }
+.board .rank { width: 2.5em; color: var(--muted); }
+.board .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .points { font-weight: 600; }
+.board li.you { background: rgba(139, 92, 246, 0.2); border-radius: 6px; }
+.board li.gap, .board li.empty { justify-content: center; color: var(--muted); border-bottom: none; }
 
 .category-list {
   display: grid;

@@ -27,12 +27,18 @@
         <li>+2 for a deep cut</li>
         <li>Last names and typos count</li>
       </ul>
-      <div id="mode-picker" class="mode-picker" role="group" aria-label="Difficulty">
+      <div id="mode-picker" class="segmented" role="group" aria-label="Difficulty">
         <button type="button" data-mode="easy" aria-pressed="true">Human</button>
         <button type="button" data-mode="hard" aria-pressed="false">Perfect Human Specimen</button>
       </div>
-      <p class="muted">Pick a category:</p>
+      <button id="daily-btn" class="daily primary" type="button">
+        <span class="emoji">📅</span>
+        <span>Daily challenge</span>
+        <span id="daily-status" class="count"></span>
+      </button>
+      <p class="muted">Or pick a category:</p>
       <div id="category-list" class="category-list"></div>
+      <button id="leaderboard-btn" class="link-btn" type="button">🏆 Leaderboard</button>
     </section>
 
     <section id="game-screen" hidden>
@@ -54,11 +60,33 @@
     <section id="end-screen" hidden>
       <h2>Game over!</h2>
       <p id="final-score"></p>
+      <form id="submit-form" class="submit-form" autocomplete="off" hidden>
+        <input id="nickname-input" type="text" maxlength="20" placeholder="Your nickname" aria-label="Nickname" />
+        <button type="submit" class="primary">Submit score</button>
+      </form>
+      <p id="submit-status" class="muted" aria-live="polite"></p>
+      <ol id="end-board" class="board" hidden></ol>
       <ul id="summary"></ul>
       <div class="actions">
         <button id="change-category-btn">Change category</button>
         <button id="restart-btn" class="primary">Play again</button>
       </div>
+    </section>
+
+    <section id="leaderboard-screen" hidden>
+      <h2>🏆 Leaderboard</h2>
+      <div id="lb-kind" class="segmented" role="group" aria-label="Leaderboard">
+        <button type="button" data-kind="daily">Daily challenge</button>
+        <button type="button" data-kind="random">Random games</button>
+      </div>
+      <div id="lb-mode" class="segmented" role="group" aria-label="Difficulty">
+        <button type="button" data-mode="easy">Human</button>
+        <button type="button" data-mode="hard">Perfect Human Specimen</button>
+      </div>
+      <select id="lb-category" aria-label="Category"></select>
+      <p id="lb-note" class="muted"></p>
+      <p id="lb-status" class="muted" aria-live="polite"></p>
+      <ol id="lb-list" class="board" hidden></ol>
     </section>
 
     <footer>Photos from Wikipedia / Wikimedia Commons.</footer>
