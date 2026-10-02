@@ -2,7 +2,7 @@
 
 A small browser game: you see a celebrity's photo and type their name.
 
-**Play it here: https://gabrielfolk.github.io/celebrity-naming-game/**
+**Play it here: https://whosthatceleb.com**
 
 ## How to play
 
