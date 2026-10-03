@@ -202,6 +202,7 @@ select {
 form { display: flex; gap: 8px; margin-top: 16px; }
 input {
   flex: 1;
+  min-width: 0;
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--line);
@@ -238,6 +239,9 @@ button.primary:disabled,
 button.primary:disabled:hover { background: transparent; border-color: var(--line); color: var(--muted); opacity: 1; }
 
 .actions { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+.retry-row { margin-top: 0; }
+.retry-row button { margin-top: 10px; }
+.submit-form button { white-space: nowrap; }
 
 .feedback { min-height: 1.4em; font-weight: 600; }
 .feedback.good { color: var(--good); }
@@ -267,8 +271,27 @@ footer { margin-top: 20px; font-size: 0.75rem; color: var(--muted); }
 .panel .board { font-size: 0.95rem; }
 .small { font-size: 0.8rem; }
 
+/* Phones: the same idea. A one-line title, tighter spacing, and a photo that
+   shrinks with the screen (svh = the height with the browser's toolbars showing),
+   so the guess box and the result stay in view. Tap targets are at least 44px. */
+@media (max-width: 819px) {
+  body { padding: 8px; }
+  .card { padding: 14px 16px 12px; }
+  h1 { font-size: clamp(1.2rem, 6.4vw, 1.6rem); margin-bottom: 4px; white-space: nowrap; }
+  .home-btn { min-height: 44px; margin: -12px 0 -6px -12px; padding: 10px 12px; }
+  #category-label { margin: 2px 0 6px; }
+  .stats { margin-bottom: 10px; }
+  .progress { margin: -2px 0 10px; }
+  .photo-frame { aspect-ratio: auto; height: clamp(200px, calc(100vh - 300px), 460px); height: clamp(200px, calc(100svh - 300px), 460px); }
+  form { margin-top: 10px; }
+  #guess-form button { padding: 10px 12px; }
+  .feedback { margin: 8px 0 0; }
+  footer { margin-top: 10px; }
+  .segmented button { min-height: 44px; }
+}
+
 /* Desktop: tighter spacing, and the photo shrinks with the window height so a
-   whole round fits on screen without scrolling (about 355px is everything else). */
+   whole round fits on screen without scrolling (about 310px is everything else). */
 @media (min-width: 820px) {
   body { padding: 12px 16px; }
   .card { padding: 18px 22px; }
@@ -277,7 +300,7 @@ footer { margin-top: 20px; font-size: 0.75rem; color: var(--muted); }
   #category-label { margin: 2px 0 6px; }
   .stats { margin-bottom: 10px; }
   .progress { margin: -2px 0 10px; }
-  .photo-frame { aspect-ratio: auto; height: clamp(240px, calc(100vh - 355px), 520px); }
+  .photo-frame { aspect-ratio: auto; height: clamp(240px, calc(100vh - 310px), 520px); }
   form { margin-top: 10px; }
   .actions { margin-top: 8px; }
   .feedback { margin: 8px 0 0; }
