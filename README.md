@@ -43,7 +43,8 @@ Outside `public/`:
 
 - `server/schema.sql`: the database tables.
 - `server/config.example.php`: the template for the database settings, which live outside the web folder on the server.
-- `.cpanel.yml`: the deploy steps cPanel runs.
+- `.cpanel.yml` and `server/deploy.sh`: the deploy cPanel runs. It copies `public/` into the site's folder.
+- `server/htaccess`: the HTTPS redirect and security headers. The deploy adds them to the site's `.htaccess` in a marked section and keeps everything else in that file, like cPanel's PHP setting.
 
 Scores come from the browser, so the leaderboard can't fully stop someone determined to fake one. The server checks make that harder, not impossible.
 

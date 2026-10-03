@@ -75,6 +75,11 @@ Click **Create**. Then deploy it as below.
 The deploy only adds and replaces files. If you delete or rename a file in `public/`, also
 delete the old copy from `whosthatceleb.com/` in File Manager.
 
+It also adds the HTTPS redirect and security headers from `server/htaccess` to the top of
+`whosthatceleb.com/.htaccess`, between `# BEGIN whosthatceleb` and `# END whosthatceleb`.
+Each deploy replaces that section and leaves the rest of the file alone, so cPanel's own
+settings there (like the PHP version) are kept. Change those rules in git, not in File Manager.
+
 ## If something goes wrong
 
 - **"Deploy HEAD Commit" is greyed out.** The repo needs `.cpanel.yml` at its root and no

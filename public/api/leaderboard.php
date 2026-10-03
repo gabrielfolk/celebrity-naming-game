@@ -16,6 +16,7 @@ const DEEP_BONUS = 2;
 const TOP_N = 20;
 const MAX_SUBMISSIONS_PER_HOUR = 30;
 
+header_remove('X-Powered-By');
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 

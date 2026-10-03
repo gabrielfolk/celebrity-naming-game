@@ -1,9 +1,9 @@
 ---
 # cPanel Git Version Control runs these when you click "Deploy HEAD Commit".
-# It copies the website (public/) into the domain's folder. It only adds and
-# replaces files, never deletes, so nothing outside the game can be touched.
+# server/deploy.sh copies the website (public/) into the domain's folder and adds
+# the rules from server/htaccess. It never deletes files, so nothing outside the
+# game can be touched.
 deployment:
   tasks:
     - export DEPLOYPATH="$HOME/whosthatceleb.com"
-    - test -d "$DEPLOYPATH" || { echo "Missing $DEPLOYPATH. Create the domain in cPanel first (see DEPLOY.md)."; exit 1; }
-    - /bin/cp -R public/. "$DEPLOYPATH/"
+    - /bin/bash server/deploy.sh "$DEPLOYPATH"

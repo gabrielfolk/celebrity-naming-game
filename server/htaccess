@@ -1,0 +1,27 @@
+# BEGIN whosthatceleb
+# Added by .cpanel.yml on each deploy, from server/htaccess in the git repo. Edit it
+# there, not here. Anything outside this section (like cPanel's PHP settings) is kept.
+
+# Send http:// visitors to https://. The X-Forwarded-Proto check avoids a redirect
+# loop if the host ever handles HTTPS in front of Apache.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Browsers remember to use HTTPS for a year.
+  Header always set Strict-Transport-Security "max-age=31536000"
+  # Only load code from this site, photos from Wikimedia (any *.wikimedia.org host), and data from Wikipedia;
+  # refuse to be shown inside another site's frame.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://*.wikimedia.org; connect-src 'self' https://en.wikipedia.org; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  Header always set X-Frame-Options "DENY"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # Don't advertise the PHP version.
+  Header always unset X-Powered-By
+  Header unset X-Powered-By
+</IfModule>
+# END whosthatceleb
