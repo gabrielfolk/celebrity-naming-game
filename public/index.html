@@ -3,10 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1f3131" />
   <title>Who's That Celebrity?</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="layout">
+  <aside id="daily-panel" class="panel" aria-label="Daily challenge">
+    <h2>📅 Daily challenge</h2>
+    <p class="muted">Today's top scores · <span id="side-daily-mode">Human</span></p>
+    <ol id="side-daily-board" class="board"></ol>
+    <p class="muted small">A new challenge starts at midnight UTC.</p>
+  </aside>
+
   <main class="card">
     <header>
       <button id="home-btn" class="home-btn" type="button" hidden>← Home</button>
@@ -17,23 +26,21 @@
         <span>Score <strong id="score">0</strong></span>
         <span>Streak <strong id="streak">0</strong></span>
       </div>
+      <div id="progress" class="progress" aria-hidden="true" hidden></div>
     </header>
 
     <section id="start-screen">
       <ul class="rules">
-        <li>Name who's in the photo</li>
-        <li>10 rounds, one guess each</li>
         <li>3 points, +1 on a 3+ streak</li>
         <li>+2 for a deep cut</li>
-        <li>Last names and typos count</li>
       </ul>
       <div id="mode-picker" class="segmented" role="group" aria-label="Difficulty">
         <button type="button" data-mode="easy" aria-pressed="true">Human</button>
         <button type="button" data-mode="hard" aria-pressed="false">Perfect Human Specimen</button>
       </div>
-      <button id="daily-btn" class="daily primary" type="button">
+      <button id="daily-btn" class="daily cta" type="button">
         <span class="emoji">📅</span>
-        <span>Daily challenge</span>
+        <span class="daily-title">Daily challenge</span>
         <span id="daily-status" class="count"></span>
       </button>
       <p class="muted">Or pick a category:</p>
@@ -91,6 +98,14 @@
 
     <footer>Photos from Wikipedia / Wikimedia Commons.</footer>
   </main>
+
+  <aside id="top-panel" class="panel" aria-label="Top players">
+    <h2>🏆 Top players</h2>
+    <p class="muted">Random games · <span id="side-top-mode">Human</span></p>
+    <select id="side-category" aria-label="Category"></select>
+    <ol id="side-top-board" class="board"></ol>
+  </aside>
+  </div>
 
   <script src="celebrities.js"></script>
   <script src="game.js"></script>

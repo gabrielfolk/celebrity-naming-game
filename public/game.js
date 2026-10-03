@@ -10,7 +10,7 @@ const $ = (id) => document.getElementById(id);
 
 const EVERYONE = {
   key: "everyone",
-  label: "Everyone",
+  label: "Every Celeb",
   emoji: "🌟",
   people: Object.values(CATEGORIES).flatMap((c) => c.people),
   hard: Object.values(CATEGORIES).flatMap((c) => c.hard),
@@ -200,6 +200,7 @@ function show(screen) {
   }
   $("home-btn").hidden = screen === "start-screen";
   document.querySelector(".stats").hidden = screen === "leaderboard-screen";
+  renderDaily();
 }
 
 function updateStats() {
@@ -207,6 +208,18 @@ function updateStats() {
   $("total").textContent = totalRounds;
   $("score").textContent = score;
   $("streak").textContent = streak;
+
+  // One dot per round: right, deep cut, wrong, or the photo on screen now.
+  const dots = $("progress");
+  dots.hidden = round === 0;
+  dots.innerHTML = "";
+  for (let i = 0; i < totalRounds; i++) {
+    const h = history[i];
+    const dot = document.createElement("span");
+    if (h) dot.className = h.deep ? "deep" : h.correct ? "right" : "wrong";
+    else if (i === history.length && round > history.length) dot.className = "current";
+    dots.appendChild(dot);
+  }
 }
 
 // The celebrities a category plays with in the current mode.
@@ -225,17 +238,19 @@ function setMode(m) {
   setPressed("mode-picker", "mode", mode);
   renderDaily();
   renderCategories();
+  refreshPanels();
 }
 
 // One try per day per mode. It counts as used once started, so leaving and
 // restarting can't be used to see the answers first.
 function renderDaily() {
   const played = load(dailyKey(todayUTC(), mode));
-  $("daily-status").textContent = !played
-    ? "Same 10 celebrities for everyone today"
+  const status = !played
+    ? null
     : played.score == null
       ? "Started today, not finished"
       : `Done today: ${played.score} points`;
+  $("daily-status").textContent = status || "Same 10 celebrities for everyone today";
 }
 
 function handleDaily() {
@@ -272,7 +287,7 @@ function showCategoryPicker() {
   round = score = streak = 0;
   totalRounds = ROUNDS;
   updateStats();
-  renderDaily();
+  refreshPanels();
   show("start-screen");
 }
 
@@ -416,6 +431,7 @@ function endGame() {
     $("summary").appendChild(li);
   }
   if (dailyDate) save(dailyKey(dailyDate, mode), { score });
+  renderDaily();
   $("restart-btn").hidden = !!dailyDate;
 
   // Only full games go on the leaderboard.
@@ -462,17 +478,21 @@ function boardParams(b) {
     : { kind: "random", mode: b.mode, category: b.category };
 }
 
-// Nicknames come from other players, so they only ever go in as text.
-function renderBoard(list, data) {
+function boardMessage(list, text) {
   list.innerHTML = "";
-  const rows = [...data.top];
-  if (data.me && !data.top.some((r) => r.you)) rows.push(null, data.me);
-  if (!rows.length) {
-    const li = document.createElement("li");
-    li.className = "empty";
-    li.textContent = "No scores yet. Be the first!";
-    list.appendChild(li);
-  }
+  const li = document.createElement("li");
+  li.className = "empty";
+  li.textContent = text;
+  list.appendChild(li);
+  list.hidden = false;
+}
+
+// Nicknames come from other players, so they only ever go in as text.
+function renderBoard(list, data, limit = Infinity) {
+  list.innerHTML = "";
+  const rows = data.top.slice(0, limit);
+  if (data.me && !rows.some((r) => r.you)) rows.push(null, data.me);
+  if (!rows.length) return boardMessage(list, "No scores yet. Be the first!");
   for (const r of rows) {
     const li = document.createElement("li");
     if (!r) {
@@ -518,6 +538,7 @@ async function handleSubmitScore(e) {
           ? `New best! You're #${rank} in ${boardLabel(b)}.`
           : `Your best here is still ${data.me.score} (#${rank}).`;
     renderBoard($("end-board"), data);
+    refreshPanels();
   } catch (err) {
     $("submit-status").textContent = err.message;
     if (err.status === 409) {
@@ -529,6 +550,49 @@ async function handleSubmitScore(e) {
       button.disabled = false;
     }
   }
+}
+
+// ---------- Side panels (wide screens) ----------
+
+// Must match the first media query in style.css.
+const PANELS_MEDIA = matchMedia("(min-width: 820px)");
+const PANEL_ROWS = 10;
+let panelCategory = "everyone";
+const panelRequests = { daily: 0, top: 0 };
+
+// Loads a board into a panel, ignoring answers that arrive after a newer request.
+async function loadPanel(key, listId, b) {
+  const request = ++panelRequests[key];
+  try {
+    const data = await api("GET", { ...boardParams(b), player: playerId() });
+    if (request === panelRequests[key]) renderBoard($(listId), data, PANEL_ROWS);
+  } catch (err) {
+    if (request === panelRequests[key]) boardMessage($(listId), err.message);
+  }
+}
+
+function refreshPanels() {
+  if (!ONLINE || !PANELS_MEDIA.matches) return;
+  $("side-daily-mode").textContent = MODES[mode];
+  $("side-top-mode").textContent = MODES[mode];
+  loadPanel("daily", "side-daily-board", { kind: "daily", mode });
+  loadPanel("top", "side-top-board", { kind: "random", mode, category: panelCategory });
+}
+
+function setupPanels() {
+  document.body.classList.toggle("online", ONLINE);
+  const select = $("side-category");
+  for (const cat of [EVERYONE, ...Object.values(CATEGORIES)]) {
+    const opt = document.createElement("option");
+    opt.value = cat.key;
+    opt.textContent = `${cat.emoji} ${cat.label}`;
+    select.appendChild(opt);
+  }
+  select.addEventListener("change", () => {
+    panelCategory = select.value;
+    refreshPanels();
+  });
+  PANELS_MEDIA.addEventListener("change", refreshPanels);
 }
 
 let lbView = { kind: "daily", mode: "easy", category: "everyone" };
@@ -599,6 +663,7 @@ $("daily-btn").addEventListener("click", handleDaily);
 $("leaderboard-btn").addEventListener("click", () => openLeaderboard());
 $("submit-form").addEventListener("submit", handleSubmitScore);
 renderLeaderboardControls();
+setupPanels();
 for (const btn of document.querySelectorAll("#mode-picker button")) {
   btn.addEventListener("click", () => setMode(btn.dataset.mode));
 }

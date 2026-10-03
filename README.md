@@ -10,13 +10,13 @@ A browser game: you see a celebrity's photo and type their name.
 - **Two difficulties:** Human (228 household names) and Perfect Human Specimen (306 people you'd recognize but might not be able to name).
 - **Daily challenge:** the same 10 celebrities for everyone each day, one try per difficulty.
 - **Deep cuts:** bonus points for answering with a lesser-known name, like Jimmy Donaldson for MrBeast.
-- **Leaderboards:** one for each day's challenge, and one for each difficulty and category for random games.
+- **Leaderboards:** one for each day's challenge, and one for each difficulty and category for random games. On desktop they sit beside the game.
 - **Forgiving answers:** a last name alone counts, and so do small typos and missing accents.
 
 ## How to play
 
 - Pick a difficulty. Human has the household names; Perfect Human Specimen is a separate set of character actors, older stars, directors, international athletes, world leaders, and more.
-- Play the **daily challenge**, or pick a category (Movies & TV, Music, Sports, Public Figures, or Everyone) for a random game.
+- Play the **daily challenge**, or pick a category (Movies & TV, Music, Sports, Public Figures, or Every Celeb) for a random game.
   - The daily challenge changes at midnight UTC. It counts as played once you start it, so leaving partway doesn't give you another try.
 - Each game is 10 rounds, and you get one guess per photo. The next photo comes up on its own after a couple of seconds.
 - A last name alone counts (unless two celebrities in that difficulty share it), and so do small typos.
@@ -39,7 +39,7 @@ After a game, submit your score with a nickname.
 - **Daily challenge:** one board per difficulty for each day. You get one submission per day.
 - **Random games:** one board per difficulty and category. It keeps each player's best score.
 
-The 🏆 Leaderboard button on the home page shows the top 20 on each board, and highlights your own row. If you're outside the top 20, your rank still shows.
+On desktop, today's daily board and the top players for random games sit on either side of the game and refresh after you submit. On phones, the 🏆 Leaderboard button on the home page shows them. Your own row is highlighted, and if you're outside the top scores, your rank still shows.
 
 ## Running locally
 
@@ -77,7 +77,8 @@ Everything in `public/` is the website:
 
 - `celebrities.js`: the list of celebrities by category. Each category has a `people` list (Human) and a `hard` list (Perfect Human Specimen). Each entry is a Wikipedia page title, plus any other popular names that count as correct (`aliases`) and any lesser-known names worth the deep-cut bonus (`deep`).
 - `game.js`: the game logic. It fetches photos from the Wikipedia REST API, checks answers, runs the daily challenge (a shuffle seeded by the date, so everyone gets the same deck), and talks to the leaderboard.
-- `index.html` / `style.css`: the page and its styling.
+- `index.html` / `style.css`: the page and its styling. The colours come from a ten-colour dusk palette.
+- `beach.svg`: the background, a beach at dusk with the White Cliffs of Dover and boats in the Channel, drawn with the same palette.
 - `api/leaderboard.php`: the leaderboard API.
 
 Outside `public/`:

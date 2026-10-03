@@ -1,11 +1,29 @@
 :root {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
-  --accent: #8b5cf6;
-  --good: #22c55e;
-  --bad: #ef4444;
+  /* The ten-colour dusk palette, dark to light and cool to warm. */
+  --ink: #0f2023;
+  --slate: #1f3131;
+  --slate-teal: #395355;
+  --teal: #4e777b;
+  --sage: #c6cab3;
+  --cream: #d9caa2;
+  --sand: #c5a782;
+  --amber: #bd8445;
+  --burnt: #b2663f;
+  --rust: #773d29;
+
+  /* Roles. Text pairs are all WCAG AA (4.5:1 or more); teal, amber and burnt
+     orange are too dim for text on the cards, so they're used as fills. */
+  --card: var(--slate);
+  --line: var(--slate-teal);
+  --line-soft: rgba(57, 83, 85, 0.7);
+  --hover: #2a4244;
+  --text: var(--cream);
+  --muted: var(--sand);
+  --accent: var(--amber);          /* main buttons, ink text */
+  --accent-hover: #cc9555;
+  --on-accent: var(--ink);
+  --good: var(--sage);
+  --bad: #e07b4f;                  /* burnt orange, lightened for text */
 }
 
 * { box-sizing: border-box; }
@@ -17,24 +35,51 @@ body {
   margin: 0;
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  background: var(--bg);
+  align-items: center;
+  background: var(--ink);
   color: var(--text);
   font-family: system-ui, -apple-system, sans-serif;
   padding: 16px;
 }
 
+/* A beach at dusk behind everything (beach.svg, drawn with the palette). It's a
+   fixed layer rather than background-attachment: fixed, which iPhones ignore. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--ink) url("beach.svg") center / cover no-repeat;
+}
+
+/* Phones: just the game. Wider screens: the daily challenge and top players
+   beside it (see the media queries at the end). */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 440px);
+  grid-template-areas: "main";
+  justify-content: center;
+  align-items: start;
+  gap: 20px;
+}
+.card { grid-area: main; }
+#daily-panel { grid-area: daily; }
+#top-panel { grid-area: top; }
+.panel { display: none; }
+
 .card {
   width: 100%;
   max-width: 440px;
   background: var(--card);
+  border: 1px solid var(--line-soft);
   border-radius: 16px;
   padding: 24px;
   text-align: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
 }
 
-h1 { margin: 0 0 8px; font-size: 1.6rem; }
+h1, h2 { font-family: ui-serif, Georgia, "Times New Roman", serif; font-weight: 700; letter-spacing: 0.01em; }
+h1 { margin: 0 0 8px; font-size: 1.75rem; }
 
 .home-btn {
   display: block;
@@ -54,11 +99,19 @@ h1 { margin: 0 0 8px; font-size: 1.6rem; }
 }
 .stats strong { color: var(--text); }
 
+/* Round-by-round results under the stats. */
+.progress { display: flex; justify-content: center; gap: 6px; margin: -6px 0 14px; }
+.progress span { width: 22px; height: 6px; border-radius: 3px; background: var(--slate-teal); }
+.progress .current { background: var(--teal); box-shadow: 0 0 0 1px var(--sage); }
+.progress .right { background: var(--sage); }
+.progress .deep { background: var(--amber); }
+.progress .wrong { background: var(--burnt); }
+
 .photo-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 3 / 4;
-  background: #0b1222;
+  background: var(--ink);
   border-radius: 12px;
   overflow: hidden;
   display: grid;
@@ -81,12 +134,13 @@ h1 { margin: 0 0 8px; font-size: 1.6rem; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   margin: 4px 0 8px;
-  border: 1px solid #334155;
+  border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
 }
-.segmented button { border: none; border-radius: 0; padding: 8px 12px; }
-.segmented button[aria-pressed="true"] { background: var(--accent); }
+.segmented button { border: none; border-radius: 0; padding: 8px 12px; color: var(--muted); }
+.segmented button[aria-pressed="true"] { background: var(--sage); color: var(--ink); font-weight: 600; }
+.segmented button[aria-pressed="true"]:hover { background: var(--sage); }
 
 .daily {
   width: 100%;
@@ -97,8 +151,11 @@ h1 { margin: 0 0 8px; font-size: 1.6rem; }
   align-items: center;
   gap: 4px;
 }
+/* The daily challenge is the headline option: bigger, with an amber glow. */
+.daily.cta { box-shadow: 0 0 0 1px var(--amber), 0 8px 24px rgba(189, 132, 69, 0.3); }
+.daily .daily-title { font-family: ui-serif, Georgia, "Times New Roman", serif; font-size: 1.3rem; }
 .daily .emoji { font-size: 1.8rem; }
-.daily .count { font-size: 0.8rem; opacity: 0.85; }
+.daily .count { font-size: 0.8rem; font-weight: 400; }
 
 .link-btn { margin-top: 14px; border: none; color: var(--muted); }
 .link-btn:hover { color: var(--text); }
@@ -110,18 +167,18 @@ select {
   margin: 4px 0;
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0b1222;
+  border: 1px solid var(--line);
+  background: var(--ink);
   color: var(--text);
   font-size: 1rem;
 }
 
 .board { list-style: none; padding: 0; margin: 8px 0; text-align: left; }
-.board li { display: flex; gap: 10px; padding: 6px 8px; border-bottom: 1px solid #334155; }
+.board li { display: flex; gap: 10px; padding: 6px 8px; border-bottom: 1px solid var(--line-soft); }
 .board .rank { width: 2.5em; color: var(--muted); }
 .board .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .board .points { font-weight: 600; }
-.board li.you { background: rgba(139, 92, 246, 0.2); border-radius: 6px; }
+.board li.you { background: rgba(189, 132, 69, 0.16); box-shadow: inset 3px 0 0 var(--amber); border-radius: 6px; }
 .board li.gap, .board li.empty { justify-content: center; color: var(--muted); border-bottom: none; }
 
 .category-list {
@@ -136,7 +193,9 @@ select {
   align-items: center;
   gap: 4px;
 }
-.category-list button.everyone { grid-column: 1 / -1; }
+/* Every Celeb spans the row but stays slim, so the daily challenge stands out. */
+.category-list button.everyone { grid-column: 1 / -1; flex-direction: row; justify-content: center; gap: 10px; padding: 10px 8px; }
+.category-list button.everyone .emoji { font-size: 1.3rem; }
 .category-list .emoji { font-size: 1.8rem; }
 .category-list .count { font-size: 0.8rem; color: var(--muted); }
 
@@ -145,26 +204,38 @@ input {
   flex: 1;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0b1222;
+  border: 1px solid var(--line);
+  background: var(--ink);
   color: var(--text);
   font-size: 1rem;
 }
+input::placeholder { color: var(--muted); }
 input:focus { outline: 2px solid var(--accent); border-color: transparent; }
 
 button {
   padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid #334155;
+  border: 1px solid var(--line);
   background: transparent;
   color: var(--text);
   font-size: 1rem;
   cursor: pointer;
 }
-button:hover { background: #334155; }
-button:disabled { opacity: 0.4; cursor: not-allowed; }
-button.primary { background: var(--accent); border-color: var(--accent); }
-button.primary:hover { filter: brightness(1.1); }
+button:hover { background: var(--hover); }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+/* The daily challenge gets the deepest warm colour, so it stands apart from Guess and Submit. */
+button.cta { background: var(--rust); border-color: var(--rust); color: var(--cream); font-weight: 600; }
+button.cta:hover { background: var(--rust); border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+button.cta:disabled,
+button.cta:disabled:hover { background: transparent; border-color: var(--line); color: var(--muted); opacity: 1; }
+.panel .cta { width: 100%; margin: 4px 0 8px; }
+.shake input { border-color: var(--burnt); }
+/* Disabled main buttons go outlined instead of a faded amber, so their text stays readable. */
+button.primary:disabled,
+button.primary:disabled:hover { background: transparent; border-color: var(--line); color: var(--muted); opacity: 1; }
 
 .actions { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
 
@@ -173,7 +244,7 @@ button.primary:hover { filter: brightness(1.1); }
 .feedback.bad { color: var(--bad); }
 
 #summary { list-style: none; padding: 0; text-align: left; }
-#summary li { padding: 4px 0; border-bottom: 1px solid #334155; }
+#summary li { padding: 4px 0; border-bottom: 1px solid var(--line-soft); }
 
 footer { margin-top: 20px; font-size: 0.75rem; color: var(--muted); }
 
@@ -181,4 +252,52 @@ footer { margin-top: 20px; font-size: 0.75rem; color: var(--muted); }
 @keyframes shake {
   25% { transform: translateX(-6px); }
   75% { transform: translateX(6px); }
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+.panel h2 { margin: 0 0 4px; font-size: 1.15rem; }
+.panel .primary { width: 100%; margin: 4px 0 8px; }
+.panel .board { font-size: 0.95rem; }
+.small { font-size: 0.8rem; }
+
+/* Desktop: tighter spacing, and the photo shrinks with the window height so a
+   whole round fits on screen without scrolling (about 355px is everything else). */
+@media (min-width: 820px) {
+  body { padding: 12px 16px; }
+  .card { padding: 18px 22px; }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  .home-btn { margin: -6px 0 2px -8px; }
+  #category-label { margin: 2px 0 6px; }
+  .stats { margin-bottom: 10px; }
+  .progress { margin: -2px 0 10px; }
+  .photo-frame { aspect-ratio: auto; height: clamp(240px, calc(100vh - 355px), 520px); }
+  form { margin-top: 10px; }
+  .actions { margin-top: 8px; }
+  .feedback { margin: 8px 0 0; }
+  footer { margin-top: 10px; }
+}
+
+/* Panels need the leaderboard, so they only appear on the website (body.online),
+   and they replace the leaderboard button inside the card.
+   game.js uses the same 820px breakpoint (PANELS_MEDIA). */
+@media (min-width: 820px) {
+  body.online .layout {
+    grid-template-columns: minmax(0, 440px) 300px;
+    grid-template-areas: "main daily" "main top";
+  }
+  body.online .panel { display: block; }
+  body.online #leaderboard-btn { display: none; }
+}
+@media (min-width: 1160px) {
+  body.online .layout {
+    grid-template-columns: 300px minmax(0, 440px) 300px;
+    grid-template-areas: "daily main top";
+  }
 }
